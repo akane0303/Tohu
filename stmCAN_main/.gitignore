@@ -3,4 +3,8 @@ Debug/
 stmCAN_main.ioc
 STM32F446RETX_RAM.ld
 STM32F446RETX_FLASH.ld
+.cproject
+.settings/
+.mxproject
+.project
 

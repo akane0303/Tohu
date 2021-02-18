@@ -12,5 +12,9 @@ stmCAN_sensor/Core/Src/stm32f4xx_it.c
 stmCAN_sensor/Core/Src/syscalls.c
 stmCAN_sensor/Core/Src/sysmem.c
 stmCAN_sensor/Core/Src/system_stm32f4xx.c
-
+stmCAN_sensor/.cproject
+stmCAN_sensor/.settings/
+stmCAN_sensor/.mxproject
+stmCAN_sensor/.project
+.metadata/
 
