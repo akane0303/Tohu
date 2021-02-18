@@ -1,0 +1,17 @@
+/*
+ * Move.h
+ *
+ *  Created on: Feb 17, 2021
+ *      Author: utida
+ */
+
+#ifndef INC_MOVE_H_
+#define INC_MOVE_H_
+
+class Move {
+public:
+	Move::Move(int timenum,int channelnum0,int channelnum1);
+	void run(int v);
+};
+
+#endif /* INC_MOVE_H_ */

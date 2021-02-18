@@ -1,0 +1,10 @@
+16:08:56 **** Incremental Build of configuration Debug for project can_sensor ****
+make -j4 all 
+arm-none-eabi-size   can_sensor.elf 
+   text	   data	    bss	    dec	    hex	filename
+  11144	     20	   1868	  13032	   32e8	can_sensor.elf
+Finished building: default.size.stdout
+ 
+
+16:08:57 Build Finished. 0 errors, 0 warnings. (took 782ms)
+

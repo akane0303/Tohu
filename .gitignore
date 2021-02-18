@@ -1,0 +1,16 @@
+stmCAN_sensor/Debug/
+stmCAN_sensor/Drivers/
+stmCAN_sensor/STM32F446RETX_FLASH.ld
+stmCAN_sensor/STM32F446RETX_RAM.ld
+stmCAN_sensor/stmCAN_sensor.ioc
+stmCAN_sensor/stmCAN_sensor.launch
+stmCAN_sensor/Core/Startup/
+stmCAN_sensor/Core/Inc/stm32f4xx_hal_conf.h
+stmCAN_sensor/Core/Inc/stm32f4xx_it.h
+stmCAN_sensor/Core/Src/stm32f4xx_hal_msp.c
+stmCAN_sensor/Core/Src/stm32f4xx_it.c
+stmCAN_sensor/Core/Src/syscalls.c
+stmCAN_sensor/Core/Src/sysmem.c
+stmCAN_sensor/Core/Src/system_stm32f4xx.c
+
+
