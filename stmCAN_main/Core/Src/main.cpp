@@ -18,6 +18,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <duty.h>
 #include "main.h"
 #include "can.h"
 #include "tim.h"
@@ -171,6 +172,9 @@ int main(void)
   double delta;
   double circumference_length=0.06*M_PI;
   int allcnt=1000;
+  int p;
+  int d[3];
+  Duty duty(71,0.05,0.5,9100);
 
   /* USER CODE END Init */
 
@@ -251,8 +255,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_4);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);
+
 
   /* USER CODE END 2 */
 
@@ -282,6 +285,16 @@ int main(void)
 	  mt[0]= -speed_x;
 	  mt[1]= (1/2)*speed_x-(sqrt(3)/2)*speed_y;
 	  mt[2]= (1/2)*speed_x+(sqrt(3)/2)*speed_y;
+
+	  p=40;//電力(仮)
+
+	  d[0]=duty.calc(mt[0],p);
+	  d[1]=duty.calc(mt[1],p);
+	  d[2]=duty.calc(mt[2],p);
+
+	  run (1,1,2,d[0]*10);//モーター１
+	  run (1,3,4,d[1]*10);//モーター２
+	  run (2,1,2,d[2]*10);//モーター３
 
 
     /* USER CODE END WHILE */
