@@ -165,24 +165,42 @@ int main(void)
 	  const auto data1=static_cast<uint8_t>(wheeldirection[1]);
 	  const auto data2=static_cast<uint8_t>(wheeldirection[2]);
 */
-	  TxData[0]=wheeldirection[0]%0x100;
-	  TxData[1]=wheeldirection[0]/0x100;
-	  TxData[2]=wheeldirection[1]%0x100;
-	  TxData[3]=wheeldirection[1]/0x100;
-	  TxData[4]=wheeldirection[2]%0x100;
-	  TxData[5]=wheeldirection[2]/0x100;
+	 if(wheeldirection[0]<0){
+		 TxData[0]=(0x10000+wheeldirection[0])%0x100;
+		 TxData[1]=(0x10000+wheeldirection[0])/0x100;
+	 }
+	 if(wheeldirection[0]>=0){
+		 TxData[0]=wheeldirection[0]%0x100;
+		 TxData[1]=wheeldirection[0]/0x100;
+	 }
+	 if(wheeldirection[1]<0){
+		 TxData[2]=(0x10000+wheeldirection[1])%0x100;
+		 TxData[3]=(0x10000+wheeldirection[1])/0x100;
+	 }
+	 if(wheeldirection[1]>=0){
+		 TxData[2]=wheeldirection[1]%0x100;
+		 TxData[3]=wheeldirection[1]/0x100;
+	 }
+	 if(wheeldirection[2]<0){
+		 TxData[4]=(0x10000+wheeldirection[2])%0x100;
+		 TxData[5]=(0x10000+wheeldirection[2])/0x100;
+	 }
+	 if(wheeldirection[2]>=0){
+		 TxData[4]=wheeldirection[2]%0x100;
+		 TxData[5]=wheeldirection[2]/0x100;
+	 }
 
-/*
-	  printf("%d",TxData[0]);
+	/*  printf("%d",TxData[0]);
 	  printf("%d",TxData[1]);
 	  printf("%s","\n");
 	  printf("%s","wheel");
 	  printf("%d",wheeldirection[0]);
 	  printf("%s","\n");
-	  /*
-	  printf("%d",TxData[2]);
-	  printf("%s","\n");
 */
+
+	  printf("%d",wheeldirection[0]);
+	  printf("%s","\n");
+
 	  if(HAL_CAN_AddTxMessage(&CanHandle,&TxHeader,TxData,&TxMailbox)!=HAL_OK){
 		  printf("%s","txerror");
 		  Error_Handler();

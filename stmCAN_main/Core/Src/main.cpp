@@ -31,6 +31,7 @@
 #include"cubic_spline.h"
 #include"duty.h"
 #include<vector>
+#include<math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +57,7 @@ CAN_RxHeaderTypeDef   RxHeader;
 uint8_t               TxData[8];
 int                   RxData[8]={0,0,0,0,0,0,0,0};
 uint32_t              TxMailbox;
-int				        data[3];
+double			        data[3]={0,0,0};
 
 /* USER CODE END PV */
 
@@ -71,66 +72,46 @@ static void CAN_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void run(int timnum,int ch1,int ch2,int D_ratio ){
-	if(timnum==1){
-		if(ch1==1&&ch2==2){
-			if(D_ratio>0){
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,D_ratio);
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2,0);
-			}
-			if(D_ratio<0){
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,0);
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2,D_ratio);
-			}
-			else{
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,0);
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2,0);
-			}
-		}
-		if(ch1==3&&ch2==4){
-			if(D_ratio>0){
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3,D_ratio);
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4,0);
-			}
-			if(D_ratio<0){
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3,0);
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4,D_ratio);
-			}
-			else{
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3,0);
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4,0);
-			}
-		}
+void run1(int a){
+	if(a>0){
+		TIM1->CCR1=0;
+		TIM1->CCR2=a;
 	}
-	if(timnum==2){
-			if(ch1==1&&ch2==2){
-				if(D_ratio>0){
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,D_ratio);
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2,0);
-				}
-				if(D_ratio<0){
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,0);
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2,D_ratio);
-				}
-				else{
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_1,0);
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2,0);
-				}
-			}
-			if(ch1==3&&ch2==4){
-				if(D_ratio>0){
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_3,D_ratio);
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_4,0);
-				}
-				if(D_ratio<0){
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_3,0);
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_4,D_ratio);
-					}
-				else{
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_3,0);
-					__HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_4,0);
-				}
-			}
+	else if(a<0){
+		TIM1->CCR1=-1*a;
+		TIM1->CCR2=0;
+	}
+	else{
+		TIM1->CCR1=0;
+		TIM1->CCR2=0;
+	}
+}
+void run0(int a){
+	if(a>0){
+		TIM1->CCR3=-1*-1*a;
+		TIM1->CCR4=0;
+	}
+	else if(a<0){
+		TIM1->CCR3=0;
+		TIM1->CCR4=-1*a;
+	}
+	else{
+		TIM1->CCR3=0;
+		TIM1->CCR4=0;
+	}
+}
+void run2(int a){
+	if(a>0){
+		TIM2->CCR2=a;
+		TIM2->CCR3=0;
+	}
+	else if(a<0){
+		TIM2->CCR2=0;
+		TIM2->CCR3=-1*a;
+	}
+	else{
+		TIM2->CCR2=0;
+		TIM2->CCR3=0;
 	}
 }
 
@@ -145,7 +126,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	setbuf(stdout,NULL);
-    printf("%s","a");
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -155,16 +136,16 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   double cnt[3]={0,0,0};
-  double x,y,z;
-  double speed_x,speed_y,v;
+  double nowx=0,nowy=0,nowz=0;
+  double speed_x,speed_y,v=400;
   double mt[3];
-  double init_x,init_y,init_yaw,init_v;
-  double speed;
-  int target_ind,last_ind;
-  double lf;
-  double delta;
+  double init_x=0,init_y=0,init_yaw=M_PI/2,init_v=0;
+  double speed=0.1;
+  uint8_t target_ind=0,last_ind=0;
+  double lf=0;
+  double delta=0;
   double circumference_length=0.06*M_PI;
-  int allcnt=1000;
+  int allcnt=300;
   int p;
   int d[3];
   bool flag=false;
@@ -192,18 +173,18 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-  printf("%s","conf");
+
   CAN_Config();
 
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_4);
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
 
-  std::vector<double>point_x{0,0,0,0.5,1,1,1};
-  std::vector<double>point_y{1,2,1,1,2,2,2};
+  std::vector<double>point_x{0,-0.5,0,0.5,0,-0.5,0};
+  std::vector<double>point_y{0,0.5,0.75,1,1.25,1.5,2};
   std::vector<double>tx;
   std::vector<double>ty;
   std::vector<double>rx;
@@ -211,41 +192,44 @@ int main(void)
   std::vector<double>dist;
 
 
+
   CubicSpline course_x(point_x);
   CubicSpline course_y(point_y);
 
+
+
   State state(init_x,init_y,init_yaw,init_v);
 
-  for(double i=0.0;i<point_x.size();i+=0.001){
+  for(double i=0.0;i<point_x.size();i+=0.2){
 	  rx.push_back(course_x.Calc(i));
 	  ry.push_back(course_y.Calc(i));
   }
+ /* for(int i=0;i<rx.size();i++){
+  	  printf("%lf",ry[i]);
+  	  printf("%s","\n");
+    }
+	*/
  //ターゲット地点を0.01mごとにする--------------------------
-  for(double i=1;i<rx.size()-1;i++){
-	  double d=hypot(rx[i+1]-rx[i],ry[i+1]-ry[i]);
-	  dist.push_back(d);
-  }
-  for(int i=0;i<dist.size();i++){
-	  if(dist[i]>0.01||dist[i]<0.009){
-		  tx.push_back(rx[i]);
-		  ty.push_back(ry[i]);
-	  }
-  }
+
 //------------------------------------------------------------------------------
-  last_ind=tx.size()-1;
-  TargetCourse target_course(tx,ty);
+  last_ind=rx.size()-1;
+  TargetCourse target_course(rx,ry);
   std::tie(target_ind,lf)=target_course.search_target_index(state);
 
-
+  printf("%d",last_ind);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (time>nowtime && last_ind>target_ind)
+  while (last_ind>target_ind)
   {
-	  	  if(HAL_GPIO_ReadPin(PC8_GPIO_Port,PC8_Pin)==0)flag=true;
-	  	  if(flag){
+
+
+
+	  if(HAL_GPIO_ReadPin(PC8_GPIO_Port,PC8_Pin)==0){
+
+
 	  		  cnt[0]=data[0]/allcnt;
 	  		  cnt[1]=data[1]/allcnt;
 	  		  cnt[2]=data[2]/allcnt;
@@ -254,13 +238,18 @@ int main(void)
 	  		  cnt[1]*=circumference_length;
 	  		  cnt[2]*=circumference_length;
 
-	  		  x=-cnt[0]+cnt[1]*sqrt(3)/2+cnt[2]*sqrt(3)/2;
-	  		  y=-cnt[1]/2 +cnt[2]/2;
-	  		  z=cnt[0]+cnt[1]+cnt[2];
+
+	  		  nowx=-cnt[0]+(cnt[1]*sqrt(3)/2)+(cnt[2]*sqrt(3)/2);
+	  		  nowy=-cnt[1]/2 +cnt[2]/2;
+	  		  nowz=cnt[0]+cnt[1]+cnt[2];
+
+
 
 
 	  		  std::tie(target_ind,delta)=pursuit_control(state,target_course,target_ind);
-	  		  state.update(x,y,speed,delta);
+	  		  state.update(nowx,nowy,speed,delta);
+
+
 
 	  		  speed_x=v*cos(delta);
 	  		  speed_y=v*sin(delta);
@@ -271,30 +260,53 @@ int main(void)
 
 	  		  p=40;//電力(仮)
 
-	  		  d[0]=duty.calc(mt[0],p);
-	  		  d[1]=duty.calc(mt[1],p);
-	  		  d[2]=duty.calc(mt[2],p);
+	  		  //d[0]=duty.calc(mt[0],p);
+	  		  //d[1]=duty.calc(mt[1],p);
+	  		  //d[2]=duty.calc(mt[2],p);
 
-	  		  run (1,1,2,d[0]*10);//モーター１
-	  		  run (1,3,4,d[1]*10);//モーター２
-	  		  run (2,1,2,d[2]*10);//モーター３
+	  		 if(mt[0]>200)mt[0]=200;
+	  		 if(mt[0]<-200)mt[0]=-200;
+	  		 if(mt[1]>200)mt[1]=200;
+	  		 if(mt[1]<-200)mt[1]=-200;
+	  		 if(mt[2]>200)mt[2]=200;
+	  		 if(mt[2]<-200)mt[2]=-200;
 
-	  		  nowtime+=0.1;
+			 run0(mt[0]);
+			 run1(mt[1]);//モーター２
+			 run2(mt[2]);//モーター３
+
+			  printf("%s","d[0]");
+			  printf("%lf",nowx);
+	  		  printf("%s","\n");
+	  		  printf("%s","d[1]");
+	  		  printf("%lf",nowy);
+	  		  printf("%s","\n");
+	 		  printf("%s","d[2]");
+	  		  printf("%lf",mt[2]);
+	  		  printf("%s","\n");
+
+
+
 	  	  }
-	/*  if(HAL_CAN_AddTxMessage(&CanHandle,&TxHeader,TxData,&TxMailbox)!=HAL_OK){
+	  	//  printf("%d",target_ind);
+	  	//  printf("%s","\n");
+
+	 /* if(HAL_CAN_AddTxMessage(&CanHandle,&TxHeader,TxData,&TxMailbox)!=HAL_OK){
 		  printf("%s","txerror\n");
-		  .....();
 	  }
-//    while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {printf("%s","waiting");}
-//    HAL_Delay(100);
+	//while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {printf("%s","waiting");}
+	//HAL_Delay(100);
    //printf("%s","b");
+	 */
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
-  run (1,1,2,0);//モーター１
-  run (1,3,4,0);//モーター２
-  run (2,1,2,0);//モーター３
+  run0(0);//モーター１
+  run1(0);//モーター２
+  run2(0);//モーター３
   /* USER CODE END 3 */
 }
 
@@ -533,26 +545,26 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     const auto data1=static_cast<int>(RxData[1]);
     const auto data2=static_cast<int>(RxData[2]);
 	*/
-    data[0]=RxData[0]+RxData[1]*0x100;
-    	if(data[0]>0x8000){
-    		data[0]-=0x10000;
+    data[1]=RxData[0]+RxData[1]*0x100;
+    	if(data[1]>0x8000){
+    		data[1]-=0x10000;
     }
-    data[1]=RxData[2]+RxData[3]*0x100;
-        if(data[1]>0x8000){
-        	data[1]-=0x10000;
+    data[2]=RxData[2]+RxData[3]*0x100;
+        if(data[2]>0x8000){
+        	data[2]-=0x10000;
      }
-     data[2]=RxData[4]+RxData[5]*0x100;
-          if(data[2]>0x8000){
-            data[2]-=0x10000;
+     data[0]=RxData[4]+RxData[5]*0x100;
+          if(data[0]>0x8000){
+            data[0]-=0x10000;
       }
     //printf("%s","success\n");
-    /*printf("%d",data[0]);
-    printf("%s","\n");
-    */
+//    printf("%d",data[1]);
+//    printf("%s","\n");
+
     //printf("%d",data[1]);
     //printf("%s","\n");
-    printf("%d",data[2]);
-    printf("%s","\n");
+    //printf("%d",data[2]);
+   // printf("%s","\n");
 
   }
 
