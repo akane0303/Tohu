@@ -158,6 +158,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  printf("%s","a");
 	  wheeldirection[0]+=get_enc0();
 	  wheeldirection[1]+=get_enc1();
 	  wheeldirection[2]+=get_enc2();

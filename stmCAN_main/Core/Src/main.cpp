@@ -29,7 +29,6 @@
 #include<stdio.h>
 #include"pure_pursuit.h"
 #include"cubic_spline.h"
-#include"duty.h"
 #include<vector>
 #include<math.h>
 /* USER CODE END Includes */
@@ -137,21 +136,20 @@ int main(void)
   /* USER CODE BEGIN Init */
   double cnt[3]={0,0,0};
   double nowx=0,nowy=0,nowz=0;
-  double speed_x,speed_y,v=400;
+  double speed_x,speed_y,v=0.1;
   double mt[3];
   double init_x=0,init_y=0,init_yaw=M_PI/2,init_v=0;
   double speed=0.1;
   uint8_t target_ind=0,last_ind=0;
   double lf=0;
   double delta=0;
-  double circumference_length=0.06*M_PI;
+  double circumference_length=0.1*M_PI;
   int allcnt=300;
   int p;
   int d[3];
   bool flag=false;
   int time=100,nowtime=0;
-  Duty duty(71,0.05,0.5,9100);
-
+  double Dist,Delta;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -183,13 +181,14 @@ int main(void)
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
 
-  std::vector<double>point_x{0,-0.5,0,0.5,0,-0.5,0};
+  std::vector<double>point_x{0,-0.4,0,0.4,0,-0.4,0};
   std::vector<double>point_y{0,0.5,0.75,1,1.25,1.5,2};
+  std::vector<double>curvature;
   std::vector<double>tx;
   std::vector<double>ty;
   std::vector<double>rx;
   std::vector<double>ry;
-  std::vector<double>dist;
+
 
 
 
@@ -204,17 +203,25 @@ int main(void)
 	  rx.push_back(course_x.Calc(i));
 	  ry.push_back(course_y.Calc(i));
   }
- /* for(int i=0;i<rx.size();i++){
-  	  printf("%lf",ry[i]);
-  	  printf("%s","\n");
-    }
-	*/
- //ターゲット地点を0.01mごとにする--------------------------
+
+//曲率マップ生成---------------------------------
+  Dist=hypot(rx[0]-init_x,ry[0]-init_y);
+  Delta=atan2(ry[0],rx[0]);
+  curvature.push_back(Delta/Dist);
+
+  for(int i=0;i<rx.size()-1;i++){
+	  Dist=hypot(rx[i+1]-rx[i],ry[i+1]-ry[i]);
+	  Delta=atan2(ry[i+1],rx[i+1]);
+	  curvature.push_back(Delta/Dist);
+  }
+ //------------------------------------------------
+ //ターゲット地点を0.01mごとにする-------------------__-------
 
 //------------------------------------------------------------------------------
   last_ind=rx.size()-1;
   TargetCourse target_course(rx,ry);
   std::tie(target_ind,lf)=target_course.search_target_index(state);
+
 
   printf("%d",last_ind);
 
@@ -224,11 +231,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (last_ind>target_ind)
   {
-
-
-
 	  if(HAL_GPIO_ReadPin(PC8_GPIO_Port,PC8_Pin)==0){
-
 
 	  		  cnt[0]=data[0]/allcnt;
 	  		  cnt[1]=data[1]/allcnt;
@@ -238,25 +241,19 @@ int main(void)
 	  		  cnt[1]*=circumference_length;
 	  		  cnt[2]*=circumference_length;
 
-
 	  		  nowx=-cnt[0]+(cnt[1]*sqrt(3)/2)+(cnt[2]*sqrt(3)/2);
 	  		  nowy=-cnt[1]/2 +cnt[2]/2;
 	  		  nowz=cnt[0]+cnt[1]+cnt[2];
 
-
-
-
 	  		  std::tie(target_ind,delta)=pursuit_control(state,target_course,target_ind);
 	  		  state.update(nowx,nowy,speed,delta);
-
-
 
 	  		  speed_x=v*cos(delta);
 	  		  speed_y=v*sin(delta);
 
 	  		  mt[0]= -speed_x;
-	  		  mt[1]= (1/2)*speed_x-(sqrt(3)/2)*speed_y;
-	  		  mt[2]= (1/2)*speed_x+(sqrt(3)/2)*speed_y;
+	  		  mt[1]= (speed_x/2)-(sqrt(3)/2)*speed_y;
+	  		  mt[2]= (speed_x/2)+(sqrt(3)/2)*speed_y;
 
 	  		  p=40;//電力(仮)
 
@@ -264,30 +261,54 @@ int main(void)
 	  		  //d[1]=duty.calc(mt[1],p);
 	  		  //d[2]=duty.calc(mt[2],p);
 
-	  		 if(mt[0]>200)mt[0]=200;
-	  		 if(mt[0]<-200)mt[0]=-200;
-	  		 if(mt[1]>200)mt[1]=200;
-	  		 if(mt[1]<-200)mt[1]=-200;
-	  		 if(mt[2]>200)mt[2]=200;
-	  		 if(mt[2]<-200)mt[2]=-200;
+	  		  mt[0]*=1000*5;
+	  		  mt[1]*=1000*5;
+	  		  mt[2]*=1000*5;
+/*
+	  		  if(mt[0]>0.5)mt[0]+=50;
+	  		  if(mt[0]<-0.5)mt[0]-=50;
+	  		  if(mt[1]>0.5)mt[1]+=50;
+	  		  if(mt[1]<-0.5)mt[1]-=50;
+	  		  if(mt[2]>0.5)mt[2]+=50;
+	  		  if(mt[2]<-0.5)mt[2]-=50;
+*/
+	  		  //printf("%lf",curvature[target_ind]);
+	  		  //printf("%s","\n");
+	  		  if(curvature[target_ind]>20){
+	  			  //printf("%s","curve\n");
+	  			  mt[0]*=0.6;
+	  			  mt[1]*=0.6;
+	  			  mt[2]*=0.6;
 
-			 run0(mt[0]);
+	  		  }
+
+	  		 run0(mt[0]);
 			 run1(mt[1]);//モーター２
 			 run2(mt[2]);//モーター３
 
+
 			  printf("%s","d[0]");
-			  printf("%lf",nowx);
+			  printf("%lf",mt[0]);
 	  		  printf("%s","\n");
 	  		  printf("%s","d[1]");
-	  		  printf("%lf",nowy);
+	  		  printf("%lf",mt[1]);
 	  		  printf("%s","\n");
 	 		  printf("%s","d[2]");
 	  		  printf("%lf",mt[2]);
 	  		  printf("%s","\n");
+	 		  printf("%s","delta");
+	  		  printf("%lf",delta);
+	  		  printf("%s","\n");
 
+	  		  //HAL_Delay(10);
 
 
 	  	  }
+	  else{
+		  run0(0);
+		  run1(0);
+		  run2(0);
+	  }
 	  	//  printf("%d",target_ind);
 	  	//  printf("%s","\n");
 
@@ -557,13 +578,13 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
           if(data[0]>0x8000){
             data[0]-=0x10000;
       }
-    //printf("%s","success\n");
-//    printf("%d",data[1]);
-//    printf("%s","\n");
+   // printf("%s","success\n");
+  // printf("%lf",data[1]);
+  //  printf("%s","\n");
 
-    //printf("%d",data[1]);
-    //printf("%s","\n");
-    //printf("%d",data[2]);
+   // printf("%d",data[1]);
+   // printf("%s","\n");
+   // printf("%d",data[2]);
    // printf("%s","\n");
 
   }
