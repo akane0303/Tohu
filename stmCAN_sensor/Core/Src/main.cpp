@@ -117,12 +117,15 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	setbuf(stdout,NULL);
-    printf("%s","a");
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  /* Reset of all p
+   *
+   *
+   * eripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -158,7 +161,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  printf("%s","a");
+
 	  wheeldirection[0]+=get_enc0();
 	  wheeldirection[1]+=get_enc1();
 	  wheeldirection[2]+=get_enc2();
@@ -195,13 +198,16 @@ int main(void)
 	  printf("%d",TxData[1]);
 	  printf("%s","\n");
 	  printf("%s","wheel");
-	  printf("%d",wheeldirection[0]);
-	  printf("%s","\n");
 */
+//	  printf("%d",wheeldirection[0]);
+//	  printf("%s","\n");
 
-	  printf("%d",wheeldirection[0]);
+
+	  printf("%d",wheeldirection[1]);
 	  printf("%s","\n");
 
+	//  printf("%d",wheeldirection[2]);
+	//  printf("%s","\n");
 	  if(HAL_CAN_AddTxMessage(&CanHandle,&TxHeader,TxData,&TxMailbox)!=HAL_OK){
 		  printf("%s","txerror");
 		  Error_Handler();

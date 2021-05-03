@@ -25,12 +25,8 @@ class State{
         double x=0,y=0,yaw=0,v=0;
         double rear_x=0,rear_y=0;
 
-
         std::vector<double>tx;
         std::vector<double>ty;
-
-
-
 };
 
 class TargetCourse{
@@ -166,9 +162,8 @@ std::tuple<int,double> pursuit_control(State state,TargetCourse& trajectory,uint
     if(Ind<trajectory.cx.size()){
         tx=trajectory.cx[Ind];
         ty=trajectory.cy[Ind];
-       printf("%lf",trajectory.cy[Ind]);//？消すとおかしくなる
-       printf("%s","\n");
-
+        printf("%lf",trajectory.cx[Ind]);
+        printf("%s","\n");
     }
     if(Ind>trajectory.cx.size()){
         tx=trajectory.cx[trajectory.cx.size()-1];
@@ -176,9 +171,6 @@ std::tuple<int,double> pursuit_control(State state,TargetCourse& trajectory,uint
         Ind=trajectory.cx.size()-1;
 
     }
-
-
-
     double alpha=atan2(ty-state.rear_y,tx-state.rear_x);
 /*
     printf("%s","ty");
@@ -197,7 +189,7 @@ std::tuple<int,double> pursuit_control(State state,TargetCourse& trajectory,uint
     printf("%s","rex");
 */
 
- /*
+/*
     printf("%lf",state.rear_x);
       printf("%s","\n");
       printf("%s","rey");

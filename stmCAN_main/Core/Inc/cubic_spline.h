@@ -4,7 +4,6 @@
  *  Created on: 2021/01/12
  *      Author: utida
  */
-
 #ifndef SPLINE_H
 #define SPLINE_H
 #include<vector>

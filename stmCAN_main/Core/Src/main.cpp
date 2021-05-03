@@ -50,6 +50,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
 CAN_HandleTypeDef     CanHandle;
 CAN_TxHeaderTypeDef   TxHeader;
 CAN_RxHeaderTypeDef   RxHeader;
@@ -71,6 +72,7 @@ static void CAN_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/*USER CODE END 0*/
 void run1(int a){
 	if(a>0){
 		TIM1->CCR1=0;
@@ -101,16 +103,17 @@ void run0(int a){
 }
 void run2(int a){
 	if(a>0){
-		TIM2->CCR2=a;
-		TIM2->CCR3=0;
+		TIM2->CCR3=a;
+		TIM2->CCR4=0;
 	}
 	else if(a<0){
-		TIM2->CCR2=0;
-		TIM2->CCR3=-1*a;
+		int b=-1*a;
+		TIM2->CCR3=0;
+		TIM2->CCR4=b;
 	}
 	else{
-		TIM2->CCR2=0;
 		TIM2->CCR3=0;
+		TIM2->CCR4=0;
 	}
 }
 
@@ -132,7 +135,6 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
   /* USER CODE BEGIN Init */
   double cnt[3]={0,0,0};
   double nowx=0,nowy=0,nowz=0;
@@ -144,11 +146,6 @@ int main(void)
   double lf=0;
   double delta=0;
   double circumference_length=0.1*M_PI;
-  int allcnt=300;
-  int p;
-  int d[3];
-  bool flag=false;
-  int time=100,nowtime=0;
   double Dist,Delta;
   /* USER CODE END Init */
 
@@ -157,9 +154,6 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
-
-
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -167,10 +161,7 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
-
-
   /* USER CODE BEGIN 2 */
-
 
   CAN_Config();
 
@@ -178,35 +169,31 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_4);
+  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
 
-  std::vector<double>point_x{0,-0.4,0,0.4,0,-0.4,0};
-  std::vector<double>point_y{0,0.5,0.75,1,1.25,1.5,2};
+  std::vector<double>point_x{0,0,0,0,-0.5,-0.5,-1,-1.5,-2,-4,-5,-6,-7,-7.5,-8,-8,-8.5,-8.5,-8.5,-8.5};
+  std::vector<double>point_y{0,1,2,3,3,2,1,0.6,0.5,0.5,0.5,0.5,0.6,1,2,3,3,2,1,0};
   std::vector<double>curvature;
-  std::vector<double>tx;
-  std::vector<double>ty;
   std::vector<double>rx;
   std::vector<double>ry;
 
+  CubicSpline *course_x=new CubicSpline(point_x);
+  CubicSpline *course_y=new CubicSpline(point_y);
 
-
-
-  CubicSpline course_x(point_x);
-  CubicSpline course_y(point_y);
-
-
-
-  State state(init_x,init_y,init_yaw,init_v);
-
-  for(double i=0.0;i<point_x.size();i+=0.2){
-	  rx.push_back(course_x.Calc(i));
-	  ry.push_back(course_y.Calc(i));
+  for(double i=0;i<point_x.size();i+=0.2){
+	  rx.push_back(course_x->Calc(i));
+	  ry.push_back(course_y->Calc(i));
+  }
+  for(int i=0.0;i<rx.size();i++){
+       	  printf("%lf",rx[i]);
+       	  printf("%s","\n");
   }
 
+
 //曲率マップ生成---------------------------------
-  Dist=hypot(rx[0]-init_x,ry[0]-init_y);
   Delta=atan2(ry[0],rx[0]);
+  Dist=hypot(rx[0]-init_x,ry[0]-init_y);
   curvature.push_back(Delta/Dist);
 
   for(int i=0;i<rx.size()-1;i++){
@@ -215,14 +202,15 @@ int main(void)
 	  curvature.push_back(Delta/Dist);
   }
  //------------------------------------------------
- //ターゲット地点を0.01mごとにする-------------------__-------
 
 //------------------------------------------------------------------------------
+  State state(init_x,init_y,init_yaw,init_v);
   last_ind=rx.size()-1;
   TargetCourse target_course(rx,ry);
   std::tie(target_ind,lf)=target_course.search_target_index(state);
 
-
+  delete course_x;
+  delete course_y;
   printf("%d",last_ind);
 
   /* USER CODE END 2 */
@@ -231,11 +219,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (last_ind>target_ind)
   {
+
 	  if(HAL_GPIO_ReadPin(PC8_GPIO_Port,PC8_Pin)==0){
 
-	  		  cnt[0]=data[0]/allcnt;
-	  		  cnt[1]=data[1]/allcnt;
-	  		  cnt[2]=data[2]/allcnt;
+	  		  cnt[0]=data[0];
+	  		  cnt[1]=data[1];
+	  		  cnt[2]=data[2];
 
 	  		  cnt[0]*=circumference_length;
 	  		  cnt[1]*=circumference_length;
@@ -255,8 +244,6 @@ int main(void)
 	  		  mt[1]= (speed_x/2)-(sqrt(3)/2)*speed_y;
 	  		  mt[2]= (speed_x/2)+(sqrt(3)/2)*speed_y;
 
-	  		  p=40;//電力(仮)
-
 	  		  //d[0]=duty.calc(mt[0],p);
 	  		  //d[1]=duty.calc(mt[1],p);
 	  		  //d[2]=duty.calc(mt[2],p);
@@ -264,17 +251,10 @@ int main(void)
 	  		  mt[0]*=1000*5;
 	  		  mt[1]*=1000*5;
 	  		  mt[2]*=1000*5;
-/*
-	  		  if(mt[0]>0.5)mt[0]+=50;
-	  		  if(mt[0]<-0.5)mt[0]-=50;
-	  		  if(mt[1]>0.5)mt[1]+=50;
-	  		  if(mt[1]<-0.5)mt[1]-=50;
-	  		  if(mt[2]>0.5)mt[2]+=50;
-	  		  if(mt[2]<-0.5)mt[2]-=50;
-*/
+
 	  		  //printf("%lf",curvature[target_ind]);
 	  		  //printf("%s","\n");
-	  		  if(curvature[target_ind]>20){
+	 		  if(curvature[target_ind]>20){
 	  			  //printf("%s","curve\n");
 	  			  mt[0]*=0.6;
 	  			  mt[1]*=0.6;
@@ -288,22 +268,23 @@ int main(void)
 
 
 			  printf("%s","d[0]");
-			  printf("%lf",mt[0]);
+			  printf("%lf",nowy);
 	  		  printf("%s","\n");
 	  		  printf("%s","d[1]");
-	  		  printf("%lf",mt[1]);
+	  		  printf("%lf",nowx);
 	  		  printf("%s","\n");
 	 		  printf("%s","d[2]");
 	  		  printf("%lf",mt[2]);
 	  		  printf("%s","\n");
 	 		  printf("%s","delta");
+
 	  		  printf("%lf",delta);
 	  		  printf("%s","\n");
 
 	  		  //HAL_Delay(10);
 
 
-	  	  }
+	  }
 	  else{
 		  run0(0);
 		  run1(0);
@@ -318,7 +299,7 @@ int main(void)
 	//while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {printf("%s","waiting");}
 	//HAL_Delay(100);
    //printf("%s","b");
-	 */
+
 
 
     /* USER CODE END WHILE */
@@ -496,7 +477,8 @@ static void CAN_Config(void)
   if (HAL_CAN_Init(&CanHandle) != HAL_OK)
   {
     /* Initialization Error */
-    Error_Handler();
+    //Error_Handler();
+	  printf("%s","initerro");
   }
 
   /*##-2- Configure the CAN Filter ###########################################*/
@@ -521,14 +503,15 @@ static void CAN_Config(void)
   if (HAL_CAN_Start(&CanHandle) != HAL_OK)
   {
     /* Start Error */
-    Error_Handler();
+    //Error_Handler();
+	  printf("%s","a");
   }
 
   /*##-4- Activate CAN RX notification #######################################*/
   if (HAL_CAN_ActivateNotification(&CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
   {
     /* Notification Error */
-    Error_Handler();
+   // Error_Handler();
   }
 
   /*##-5- Configure Transmission process #####################################*/
@@ -554,33 +537,30 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   {
     /* Reception Error */
 	 printf("%s","rxmessageerror");
-    Error_Handler();
+//    Error_Handler();
   }
 
   /* Display LEDx */
   if ((RxHeader.StdId == 0x322) && (RxHeader.IDE == CAN_ID_STD) && (RxHeader.DLC == 6))
   {
 
-
-    /*const auto data0=static_cast<int>(RxData[0]);
-    const auto data1=static_cast<int>(RxData[1]);
-    const auto data2=static_cast<int>(RxData[2]);
-	*/
-    data[1]=RxData[0]+RxData[1]*0x100;
-    	if(data[1]>0x8000){
-    		data[1]-=0x10000;
+    data[0]=RxData[2]+RxData[3]*0x100;
+    	if(data[0]>0x8000){
+    		data[0]-=0x10000;
     }
-    data[2]=RxData[2]+RxData[3]*0x100;
-        if(data[2]>0x8000){
-        	data[2]-=0x10000;
+    data[1]=RxData[4]+RxData[5]*0x100;
+        if(data[1]>0x8000){
+        	data[1]-=0x10000;
      }
-     data[0]=RxData[4]+RxData[5]*0x100;
-          if(data[0]>0x8000){
-            data[0]-=0x10000;
-      }
+    data[2]=RxData[0]+RxData[1]*0x100;
+     if(data[2]>0x8000){
+        data[2]-=0x10000;
+     }
+
+
    // printf("%s","success\n");
-  // printf("%lf",data[1]);
-  //  printf("%s","\n");
+   //printf("%lf",data[0]);
+   // printf("%s","\n");
 
    // printf("%d",data[1]);
    // printf("%s","\n");
